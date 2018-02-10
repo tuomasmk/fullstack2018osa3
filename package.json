@@ -19,7 +19,9 @@
   },
   "homepage": "https://github.com/tuomasmk/fullstack2018osa3#readme",
   "dependencies": {
+    "cors": "^2.8.4",
     "express": "^4.16.2",
+    "heroku": "^0.2.0",
     "morgan": "^1.9.0"
   },
   "devDependencies": {
