@@ -1,8 +1,13 @@
 const express = require ('express')
 const app = express()
 const bodyParser = require('body-parser')
+const morgan = require('morgan')
+
+app.use(morgan(':method :url :showData :status :res[content-length] - :response-time ms'))
+morgan.token('showData', function(req, res) { return JSON.stringify(req.body)})
 
 app.use(bodyParser.json())
+app.use(morgan('showData'))
 
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
