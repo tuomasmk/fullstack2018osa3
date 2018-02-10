@@ -36,14 +36,22 @@ app.delete('/api/persons/:id', (req, res) => {
 })
 
 app.post('/api/persons', (req, res) => {
-    const person = req.body
-    const thisId =  Math.ceil(Math.random() * 65535)
-    console.log(thisId)
-    person.id = thisId
+    const body = req.body
+    if (body.name === undefined || body.number === undefined) {
+        return res.status(400).json({error: 'name or number missing'})
+    } else if (persons.filter(p => p.name === body.name).length > 0) {
+        return res.status(400).json({error: 'name must be unique'})
+    }
 
+    const thisId =  Math.ceil(Math.random() * 65535)
+    const person = {
+        name: body.name,
+        number: body.number,
+        id: thisId
+    }
+    
     persons = persons.concat(person)
 
-    console.log(req.headers)
     console.log(person)
 
     res.json(person)
