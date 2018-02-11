@@ -11,10 +11,7 @@ app.use(bodyParser.json())
 app.use(morgan('showData'))
 
 app.use(cors())
-
-app.get('/', (req, res) => {
-    res.send('<h1>Hello World!</h1>')
-})
+app.use(express.static('build'))
 
 app.get('/info', (req, res) => {
     res.send('<div>puhelinluettelossa ' + persons.length + ' henkilön tiedot</div>'
