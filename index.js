@@ -3,6 +3,7 @@ const app = express()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 app.use(morgan(':method :url :showData :status :res[content-length] - :response-time ms'))
 morgan.token('showData', function(req, res) { return JSON.stringify(req.body)})
@@ -14,30 +15,55 @@ app.use(cors())
 app.use(express.static('build'))
 
 app.get('/info', (req, res) => {
-    res.send('<div>puhelinluettelossa ' + persons.length + ' henkilön tiedot</div>'
-    + '<div>' + Date() + '</div>')
+    Person
+        .find({})
+        .then(people => {
+            res.send('<div>puhelinluettelossa ' + people.length 
+                + ' henkilön tiedot</div>'
+                + '<div>' + Date() + '</div>')
+        })
+        .catch(error => {
+            console.log(error)
+        })
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person
+        .find({})
+        .then(people => {
+            res.json(people.map(formatPerson))
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(404).end()
+        })
 })
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(person => person.id === id)
-
-    if ( person ) {
-        res.json(person)
-    } else {
-        res.status(404).end()
-    }
+    Person
+        .findById(req.params.id)
+        .then(person => {
+            if (person) {
+                res.json(formatPerson(person))
+            } else {
+                res.status(404).end()
+            }
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(400).send({ error: 'malformatted id'})
+        })
 })
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(person => person.id !== id)
-
-    res.status(204).end()
+    Person
+        .findByIdAndRemove(req.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(errot => {
+            res.status(400).send({ error: "malformatted id" })
+        })
 })
 
 app.post('/api/persons', (req, res) => {
@@ -46,22 +72,49 @@ app.post('/api/persons', (req, res) => {
     if (body.name === undefined || body.number === undefined ||
         body.name === '' || body.number === '') {
         return res.status(400).json({error: 'name or number missing'})
-    } else if (persons.filter(p => p.name === body.name).length > 0) {
-        return res.status(400).json({error: 'name must be unique'})
     }
+    Person
+        .find({name: body.name})
+        .then(result => {
+            if(result) {
+                return res.status(400).json({error: 'name must be unique'})        
+            } else {
+                const person = new Person({
+                    name: body.name,
+                    number: body.number,
+                })
+                
+                person
+                    .save()
+                    .then(savedPerson => {
+                        res.json(formatPerson(savedPerson))
+                    })
+                    .catch(error => {
+                        console.log(error)
+                    })
+            
+                console.log(person)
+            }
+        })
+})
 
-    const thisId =  Math.ceil(Math.random() * 65535)
+app.put('/api/persons/:id', (req, res) => {
+    const body = req.body
+
     const person = {
         name: body.name,
-        number: body.number,
-        id: thisId
+        number: body.number
     }
-    
-    persons = persons.concat(person)
 
-    console.log(person)
-
-    res.json(person)
+    Person
+        .findByIdAndUpdate(req.params.id, person, { new: true} )
+        .then(updatedPerson => {
+            res.json(formatPerson(updatedPerson))
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(400).send({ error: 'malformatted id' })
+        })
 })
 
 const PORT = process.env.PORT || 3001
@@ -73,25 +126,13 @@ const date = () => {
     Date()
 }
 
-let persons = [
-    {
-    "name": "Arto Hellas",
-    "number": "040-123456",
-    "id": 1
-    },
-    {
-    "name": "Martti Tienari",
-    "number": "040-123456",
-    "id": 2
-    },
-    {
-    "name": "Arto Järvinen",
-    "number": "040-123456",
-    "id": 3
-    },
-    {
-    "name": "Lea Kutvonen",
-    "number": "040-123456",
-    "id": 4
+let persons = []
+
+const formatPerson = (person) => {
+    return {
+      name: person.name,
+      number: person.number,
+      id: person._id
     }
-]
+  }
+  
