@@ -15,13 +15,18 @@ const personSchema = new mongoose.Schema({
   number: String
 })
 
-personSchema.statics.filter = function (person) {
+personSchema.statics.testing = function() {
+  console.log('Does this get called?  ')
+}
+
+//personSchema.statics.format = function (person) {
+  personSchema.static('format', function(person) {
   return {
     name: person.name,
     number: person.number,
     id: person._id
   };
-}
+})
 
 const Person = mongoose.model('Person', personSchema);
 
